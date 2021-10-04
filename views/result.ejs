@@ -1,14 +1,46 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>How Bad Is It?</title>
+    <title>Post Sentiment Analyzer</title>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <%for(let i = 0; i < result.length; i++){%>
-    <h2><%=result[i].sentiment%></h2>
+      <p><%= text[i] %></p>
+      <h2
+        class="
+          mood
+          <%=
+          result[i].sentiment
+          ===
+          'positive'
+          ?
+          'positive'
+          :
+          result[i].sentiment
+          ===
+          'negative'
+          ?
+          'negative'
+          :
+          result[i].sentiment
+          ===
+          'neutral'
+          ?
+          'neutral'
+          :
+          'mixed'
+          %>
+        "
+      >
+        sentiment: <%=result[i].sentiment%> <%= result[i].sentiment === 'mixed' ? '' : ` (${result[i].confidenceScores[result[i].sentiment]*100}%)` %>
+      </h2>
     <% }%>
+    <form action="/" method="post">
+      <input type="text" name="subreddit" cols="30" rows="10"/>
+      <input type="submit" value="Analyze" />
+    </form>
   </body>
 </html>

@@ -1,7 +1,16 @@
+const axios = require('axios');
 const express = require("express");
 const app = express();
 
 require("dotenv").config({ path: "./config/.env" });
+
+//set rate limiting
+const rateLimit = require('express-rate-limit')
+
+const limiter = rateLimit({
+  windowMs: 24 * 60 * 60 * 1000, //15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+});
 
 // pull in the required packages.
 const {
@@ -17,6 +26,7 @@ app.set("view engine", "ejs");
 app.use(express.static("public"));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(limiter);
 
 //Routes
 app.get("/", (req, res) => {
@@ -24,9 +34,21 @@ app.get("/", (req, res) => {
 });
 
 app.post("/", async (req, res) => {
+  const documents = [];
+  const subreddit = req.body.subreddit.trim()
   try {
-    const documents = [String(req.body.sendText)];
-
+    //get subreddit posts
+    await axios.get(`https://www.reddit.com/r/${subreddit}.json`)
+    .then(response => {
+      console.log(response.data.data.children[8].data.selftext)
+      documents.push(String(response.data.data.children[8].data.selftext))
+    })
+    console.log(documents)
+    //call get random post and add the text to documents for analysis
+    if(documents.length < 1){
+      res.render("error.ejs")
+    }
+    //console.log(documents)
     console.log("=== Analyze Sentiment Sample ===");
 
     const client = new TextAnalyticsClient(
@@ -53,10 +75,11 @@ app.post("/", async (req, res) => {
         console.error(`  Error: ${result.error}`);
       }
     }
-    res.render("result.ejs", { result: results });
+    res.render("result.ejs", { result: results, text: documents });
   } catch (err) {
     console.log(err);
+    res.render("error.ejs")
   }
 });
 
-app.listen(process.env.PORT || 8000);
+app.listen(process.env.PORT || 4200);
